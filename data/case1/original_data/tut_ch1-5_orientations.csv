@@ -1,0 +1,13 @@
+X,Y,Z,dx,dy,dz,formation,group,type
+550,500,-600,-0.894934362,9.58E-18,0.446197813,fault2,fault2,fault
+350,500,-700,0.894934362,1.00E-12,0.446197813,fault1,fault1,fault
+400,500,-625,1.00E-12,1.00E-12,1,rock4,B,stratigraphic
+150,500,-550,1.00E-12,1.00E-12,1,rock4,A,stratigraphic
+850,500,-525,1.00E-12,1.00E-12,1,rock4,C,stratigraphic
+400,500,-675,1.00E-12,1.00E-12,1,rock3,B,stratigraphic
+150,500,-600,1.00E-12,1.00E-12,1,rock3,A,stratigraphic
+850,500,-575,1.00E-12,1.00E-12,1,rock3,C,stratigraphic
+850,500,-625,1.00E-12,1.00E-12,1,rock2,C,stratigraphic
+150,500,-650,1.00E-12,1.00E-12,1,rock2,A,stratigraphic
+150,500,-700,1.00E-12,1.00E-12,1,rock1,A,stratigraphic
+850,500,-675,1.00E-12,1.00E-12,1,rock1,C,stratigraphic
