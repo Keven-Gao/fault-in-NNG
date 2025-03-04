@@ -10,5 +10,6 @@ os
 numpy  
 time  
 matplotlib  
-pyvistaqt  
+pyvistaqt (optional)  
 pyvista  
+pyqt
