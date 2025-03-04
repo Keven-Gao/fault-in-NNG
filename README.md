@@ -1,8 +1,8 @@
 # fault-in-NNG
 
-This a repository of the paper 'Fault Representation in Structural Modeling with Implicit Neural Representations'. Including 2 jupyter notebooks of implement the cases in paper.
+This is a code repository for the paper **Fault Representation in Structural Modeling with Implicit Neural Representations**. Including 2 jupyter notebooks of the cases implement from the paper.
 
-Required packages:  
+## Required packages:  
 torch  
 pandas  
 warnings  
