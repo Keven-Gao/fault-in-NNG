@@ -519,6 +519,227 @@ def fault_ConcatMLP(interface_points, orientation_points, extent, resolution, in
     return mesh
 
 
+def fault_ConcatMLP_with_encoding(interface_points, orientation_points, extent, resolution, in_dim, hidden_dim, out_dim,
+                    n_hidden_layers, activation='Softplus', beta_list=[], concat=False, epochs=2000, lr=0.001, above_below=False, 
+                    fault_direct='right', movement='down'):
+    """
+    Notes: 1. this function is used to model the fault surface, it is divided into two modes by whether using the above and below constraints, 
+           2. the above and below constraints are used when thestratigraphic units (points) are vary close to the fault surface
+           3. use autograd to calculate the orientation gradient
+           4. directly use the encoding the fault features here
+    interface_points: interface points of all kinds of structural interfaces, which is the original data from .csv files
+    orientation_points: orientation points of all kinds of structural interfaces, which is the original data from .csv files
+    extent: the extent of the model
+    resolution: the resolution of the model
+    in_dim: the input dimension of the neural network
+    hidden_dim: the hidden layer dimension
+    out_dim: the output dimension, a scalar value
+    n_hidden_layers: the number of hidden layers
+    activation: the activation function, default is 'Softplus'
+    beta_list: the beta parameter in the Softplus activation function, effective when the activation function is Softplus
+    concat: whether to concatenate the input features with the hidden layer features
+    epochs: the number of epochs for training the model
+    lr: the learning rate for training the model
+    above_below: whether to use the above and below constraints, default is False
+    """
+    # read the data
+    fault_surf_point = interface_points[interface_points['type'] == 'fault']
+    fault_orie_point = orientation_points[orientation_points['type'] == 'fault']
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    # query points
+    test_x = utils.query_points(extent, resolution)
+    norm_text_x = utils.normalize(test_x, extent)
+    test_x_tensor = torch.tensor(norm_text_x, dtype=torch.float32).to(device)
+    mesh = []
+    features = []
+    features.append(test_x)
+    n = 0
+    # whether to use the above and below constraints
+    if above_below:
+        # loop for each fault surface
+        for fault_name in fault_surf_point['formation'].unique():
+            beta = beta_list[n]
+            fault_direction = fault_direct[n]
+            move_trend = movement[n]
+            # observation in fault
+            fault_point = fault_surf_point[fault_surf_point['formation'] == fault_name]
+            fault_orien = fault_orie_point[fault_orie_point['formation'] == fault_name]
+            interf = fault_point[['X', 'Y', 'Z']].values
+            orie = fault_orien[['X','Y','Z','dx','dy','dz']].values
+            select_arrow_points = orie[:,:3] 
+            select_arrow_vectors = orie[:,3:]
+            # observation in above and below of fault surface
+            unit_point = interface_points[interface_points['type'] == 'stratigraphic']
+            unit_orien = orientation_points[orientation_points['type'] == 'stratigraphic']
+            above_point = unit_point[unit_point['ref_'+fault_name] == 'above'][['X', 'Y', 'Z']].values
+            below_point = unit_point[unit_point['ref_'+fault_name] == 'below'][['X', 'Y', 'Z']].values
+            above_orien = unit_orien[unit_orien['ref_'+fault_name] == 'above'][['X', 'Y', 'Z']].values
+            below_orien = unit_orien[unit_orien['ref_'+fault_name] == 'below'][['X', 'Y', 'Z']].values
+            above = np.concatenate((above_point, above_orien), axis=0)
+            below = np.concatenate((below_point, below_orien), axis=0)
+            # normalize the data
+            normalized_inter_points = utils.normalize(interf, extent)
+            normalized_orien_points = utils.normalize(select_arrow_points, extent)
+            normalized_above_points = utils.normalize(above, extent)
+            normalized_below_points = utils.normalize(below, extent)
+            # extend the surface, the single surface is extended to three surfaces, the middle one is the original surface
+            points, labels = utils.extend_surface(normalized_inter_points)
+            points = np.vstack([points, normalized_above_points, normalized_below_points, normalized_orien_points])
+            # convert to torch tensor and send to GPU
+            #device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+            mlp_x_tensor = torch.tensor(points, dtype=torch.float32).to(device).requires_grad_(True)
+            mlp_y_tensor = torch.tensor(labels, dtype=torch.float32).to(device)
+            mlp_dy_tensor = torch.tensor(select_arrow_vectors, dtype=torch.float32).to(device)
+            # the number of interface points, orientation points, above and below for dividing the input tensor to send to loss functions
+            n_inter = normalized_inter_points.shape[0]
+            n_orien = normalized_orien_points.shape[0]
+            n_above = normalized_above_points.shape[0]
+            n_below = normalized_below_points.shape[0]
+            # the unit direction vectors of the orientation points, used in the loss function as the true orientation
+            direction_vectors_unit = mlp_dy_tensor / torch.norm(mlp_dy_tensor, dim=1, keepdim=True)
+
+            model = ConcatMLP(in_dim=in_dim,
+                              hidden_dim=hidden_dim,
+                              out_dim=out_dim,
+                              n_hidden_layers=n_hidden_layers,
+                              activation=activation,
+                              beta=beta,
+                              concat=concat,
+                              ).to(device)
+            optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+            # Initialize variables to track minimum loss and corresponding parameters
+            min_loss = float('inf')
+            best_params = None
+            for epoch in range(epochs):
+                y_pred = model(mlp_x_tensor)
+                loss_i = lossf.loss_intf(y_pred.squeeze()[:3*n_inter], mlp_y_tensor)
+                loss_o = lossf.loss_grad(mlp_x_tensor, y_pred, direction_vectors_unit, n_orien)
+                loss_a = lossf.loss_above(y_pred, n_inter, n_above, device)
+                loss_b = lossf.loss_below(y_pred, n_inter, n_above, n_below, device)
+                loss = loss_i + 0.1*loss_o + 0.1*loss_a + 0.1*loss_b    
+                #loss = loss_i + 0.1*loss_o + 0.1*loss_a + 0.1*loss_b         
+                # Check if current loss is lower than minimum loss
+                if loss_i < min_loss:
+                    min_loss = loss_i
+                    min_loss_i = loss_i
+                    min_loss_o = loss_o
+                    min_loss_ab = loss_a + loss_b
+                    # Save the current parameters of the model
+                    best_params = model.state_dict()
+                # Zero gradients, perform a backward pass, and update the weights.
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()             
+            best_model = ConcatMLP(in_dim=in_dim,
+                              hidden_dim=hidden_dim,
+                              out_dim=out_dim,
+                              n_hidden_layers=n_hidden_layers,
+                              activation=activation,
+                              beta=beta,
+                              concat=concat,
+                              ).to(device)
+            best_model.load_state_dict(best_params)
+            with torch.no_grad():
+                predictions = best_model(test_x_tensor).cpu().numpy()
+            # convert to pyvista mesh
+            fault_mesh = utils.predict_to_mesh_fault(extent, resolution, predictions)
+            # assign the fault features
+            if fault_direction == 'right':
+                flag = 1 if move_trend == 'up' else 0
+                encoding_value = np.where(predictions > 0, flag, 1-flag)
+            else:
+                flag = 0 if move_trend == 'up' else 0
+                encoding_value = np.where(predictions > 0, flag, 1-flag)
+            print(f'Finish modeling {fault_name} | Loss_i: {min_loss_i.item()}, Loss_o: {min_loss_o.item()}, Loss_ab:{min_loss_ab.item()}')
+            mesh.append(fault_mesh)
+            features.append(encoding_value)
+            n += 1
+        print('------Finish-------')
+    else:
+        for fault_name in fault_surf_point['formation'].unique():
+            beta = beta_list[n]
+            fault_direction = fault_direct[n]
+            move_trend = movement[n]
+            # observation in fault
+            fault_point = fault_surf_point[fault_surf_point['formation'] == fault_name]
+            fault_orien = fault_orie_point[fault_orie_point['formation'] == fault_name]
+            interf = fault_point[['X', 'Y', 'Z']].values
+            orie = fault_orien[['X','Y','Z','dx','dy','dz']].values
+            select_arrow_points = orie[:,:3] 
+            select_arrow_vectors = orie[:,3:]
+            # normalize the data
+            normalized_inter_points = utils.normalize(interf, extent)
+            normalized_orien_points = utils.normalize(select_arrow_points, extent)
+            # extend the surface
+            points, labels = utils.extend_surface(normalized_inter_points)
+            points = np.vstack([points, normalized_orien_points])
+            # convert to torch tensor and send to GPU
+            #device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+            mlp_x_tensor = torch.tensor(points, dtype=torch.float32).to(device).requires_grad_(True)
+            mlp_y_tensor = torch.tensor(labels, dtype=torch.float32).to(device)
+            mlp_dy_tensor = torch.tensor(select_arrow_vectors, dtype=torch.float32).to(device)
+
+            n_inter = normalized_inter_points.shape[0]
+            n_orien = normalized_orien_points.shape[0]
+            direction_vectors_unit = mlp_dy_tensor / torch.norm(mlp_dy_tensor, dim=1, keepdim=True)
+
+            model = ConcatMLP(in_dim=in_dim,
+                              hidden_dim=hidden_dim,
+                              out_dim=out_dim,
+                              n_hidden_layers=n_hidden_layers,
+                              activation=activation,
+                              beta=beta,
+                              concat=concat,
+                              ).to(device)
+            optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+            # Initialize variables to track minimum loss and corresponding parameters
+            min_loss = float('inf')
+            best_params = None
+            for epoch in range(epochs):
+                y_pred = model(mlp_x_tensor)
+                loss_i = lossf.loss_intf(y_pred.squeeze()[:3*n_inter], mlp_y_tensor)
+                loss_o = lossf.loss_grad(mlp_x_tensor, y_pred, direction_vectors_unit, n_orien)
+                loss = loss_i + 0.1*loss_o           
+                # Check if current loss is lower than minimum loss
+                if loss_i < min_loss:
+                    min_loss = loss_i
+                    min_loss_i = loss_i
+                    min_loss_o = loss_o
+                    # Save the current parameters of the model
+                    best_params = model.state_dict()
+                # Zero gradients, perform a backward pass, and update the weights.
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()             
+            best_model = ConcatMLP(in_dim=in_dim,
+                              hidden_dim=hidden_dim,
+                              out_dim=out_dim,
+                              n_hidden_layers=n_hidden_layers,
+                              activation=activation,
+                              beta=beta,
+                              concat=concat,
+                              ).to(device)
+            best_model.load_state_dict(best_params)
+            with torch.no_grad():
+                predictions = best_model(test_x_tensor).cpu().numpy()
+            # convert to pyvista mesh
+            fault_mesh = utils.predict_to_mesh_fault(extent, resolution, predictions)
+            # assign the fault features
+            if fault_direction == 'right':
+                flag = 1 if move_trend == 'up' else 0
+                encoding_value = np.where(predictions > 0, flag, 1-flag)
+            else:
+                flag = 0 if move_trend == 'up' else 0
+                encoding_value = np.where(predictions > 0, flag, 1-flag)
+            print(f'Finish modeling {fault_name} | Loss_i: {min_loss_i.item()}, Loss_o: {min_loss_o.item()}')
+            mesh.append(fault_mesh)
+            features.append(encoding_value)
+            n += 1
+        print('------Finish-------')
+    
+    return mesh, features
+
+
 def stratigraphic_ConcatMLP_neighbor(interface_data, orientation_data, meshgrid_data, extent, resolution, in_dim, hidden_dim, out_dim,
                     n_hidden_layers, activation='Softplus', beta=1, concat=False, epochs=2000, lr=0.001, delta_orie=1, alpha=0.1):
     """

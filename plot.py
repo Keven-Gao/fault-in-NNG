@@ -1,16 +1,18 @@
 import pyvistaqt as pvqt
+import pyvista as pv
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 
-def observation(interface_points, orientation_points, extent):
+def observation(interface_points, orientation_points, extent, notebook=False):
     """
     visualize the observation points, including interface points and orientation points
     interface_points: interface points of all kinds of structural interfaces, original data from .csv file
     orientation_points: orientation points of all kinds of structural interfaces, original data from .csv file
     extent: the extent of the model
     """
-    p_input = pvqt.BackgroundPlotter()
+    #p_input = pvqt.BackgroundPlotter()
+    p_input = pv.Plotter(notebook=notebook)
     # color map for different rock types
     # if the number of rock types is more than 9, the color map should be extended
     cmap = ['purple', 'green', 'yellow', 'goldenrod', 'purple', 'green', 'yellow', 'goldenrod', 'orangered']
@@ -46,20 +48,22 @@ def observation(interface_points, orientation_points, extent):
                                unconformity_orien[unconformity_orien['formation'] == m][['dx', 'dy', 'dz']].values, color=cmap[n_unconf], mag=(extent[5]-extent[4])/13)
             
     # model boundary
+    p_input.add_mesh(pv.Box(bounds=[extent[0], extent[1], extent[2], extent[3], extent[4], extent[5]]), color='k', opacity=0.1)
     p_input.add_bounding_box(color='black', line_width=2)
     p_input.add_axes()
     
     return p_input.show()
 
 
-def observation_fault_mesh(interface_points, orientation_points, extent, fault_mesh_list):
+def observation_fault_mesh(interface_points, orientation_points, extent, fault_mesh_list, notebook=False):
     """
     visualize the observation points and fault meshs
     interface_points: interface points of all kinds of structural interfaces, original data from .csv file
     orientation_points: orientation points of all kinds of structural interfaces, original data from .csv file
     extent: the extent of the model
     """
-    p_input = pvqt.BackgroundPlotter()
+    #p_input = pvqt.BackgroundPlotter()
+    p_input = pv.Plotter(notebook=notebook)
     # color map for different rock types
     # if the number of rock types is more than 9, the color map should be extended
     cmap = ['purple', 'green', 'yellow', 'goldenrod', 'purple', 'green', 'yellow', 'goldenrod', 'orangered']
@@ -105,7 +109,7 @@ def observation_fault_mesh(interface_points, orientation_points, extent, fault_m
     return p_input.show()
 
 
-def fault_mesh(mesh_list, surface_points, orientation_points, extent):
+def fault_mesh(mesh_list, surface_points, orientation_points, extent, notebook=False):
     """
     visualize the fault meshs, all the fault meshs are shown in the same plot
     mesh_list: the list of fault meshs
@@ -113,7 +117,8 @@ def fault_mesh(mesh_list, surface_points, orientation_points, extent):
     orientation_points: the orientation points, original data from .csv file
     extent: the extent of the model
     """
-    p_fault = pvqt.BackgroundPlotter()
+    #p_fault = pvqt.BackgroundPlotter()
+    p_fault = pv.Plotter(notebook=notebook)
     # color map for different rock types
     # if the number of rock types is more than 9, the color map should be extended
     cmap = ['purple', 'green', 'yellow', 'goldenrod', 'purple', 'green', 'yellow', 'goldenrod', 'orangered']
@@ -154,7 +159,8 @@ def fault_mesh(mesh_list, surface_points, orientation_points, extent):
     return p_fault.show()
 
 
-def feature_encoding(mesh_list, number, extent, type='mesh_point', side=None, domain_mesh_features=None, label_interf_all=None, orie_points_all=None):
+def feature_encoding(mesh_list, number, extent, type='mesh_point', side=None, domain_mesh_features=None, 
+                     label_interf_all=None, orie_points_all=None, notebook=False):
     """
     Notes: 1. visualize the feature encoding results
            2. every time only one fault encoding result is shown
@@ -170,7 +176,8 @@ def feature_encoding(mesh_list, number, extent, type='mesh_point', side=None, do
     """
     # which mesh to visualize
     mesh = mesh_list[number]  # number = 0 is the first mesh
-    p_encoding = pvqt.BackgroundPlotter()
+    #p_encoding = pvqt.BackgroundPlotter()
+    p_encoding = pv.Plotter(notebook=notebook)
     p_encoding.add_mesh(mesh, color='grey', line_width=5)
     if type == 'mesh_point':
         if side == 'up':  # relative move up side
@@ -195,7 +202,7 @@ def feature_encoding(mesh_list, number, extent, type='mesh_point', side=None, do
 
 
 def final_structure(fautl_mesh_list, stratigraphic_mesh, unconformity_mesh_list=None, observation_data=False, surface_points=None, 
-                    orientation_points=None, extent=None, unconformity=False):
+                    orientation_points=None, extent=None, unconformity=False, notebook=False):
     """
     visualize the final structure, including fault meshs, stratigraphic mesh, unconformity meshs, observations
     fautl_mesh_list: the list of fault meshs
@@ -207,7 +214,8 @@ def final_structure(fautl_mesh_list, stratigraphic_mesh, unconformity_mesh_list=
     extent: the extent of the model
     unconformity: state whether the model has unconformity
     """
-    p_structure = pvqt.BackgroundPlotter()
+    #p_structure = pvqt.BackgroundPlotter()
+    p_structure = pv.Plotter(notebook=notebook)
     # change the color bar 
     scalar_bar_args = {
     'title_font_size': 30,   
@@ -312,12 +320,12 @@ def slice(scalar_field, extent, save_image=False):
     #plt.grid()
 
     if save_image:
-        plt.savefig('slice.png', bbox_inches = 'tight', dpi=300)
+        plt.savefig('save_images\\slice.png', bbox_inches = 'tight', dpi=300)
 
     return plt.show()
 
 
-def layer(scalar_field, fault_mesh_list, extent):
+def layer(scalar_field, fault_mesh_list, extent, notebook=False):
     """
     visualize the single strtigraphic layer, the scalar field is thresholded to get the layer
     scalar_field: the 3D scalar field
@@ -328,7 +336,8 @@ def layer(scalar_field, fault_mesh_list, extent):
     middle_colors = viridis(np.linspace(0.3, 0.8, 256))
     custom_cmap = ListedColormap(middle_colors)
 
-    p_layer = pvqt.BackgroundPlotter()
+    #p_layer = pvqt.BackgroundPlotter()
+    p_layer = pv.Plotter(notebook=notebook)
     subset_mesh = scalar_field.threshold([-1,0], scalars='scalar')
 
     # change the color bar 
@@ -369,7 +378,7 @@ def layer(scalar_field, fault_mesh_list, extent):
     return p_layer.show()
 
 
-def scalar_field(scalar_field, fault_mesh):
+def scalar_field(scalar_field, fault_mesh, notebook=False):
     """
     visualize the 3D scalar field
     scalar_field: the 3D scalar field
@@ -378,7 +387,8 @@ def scalar_field(scalar_field, fault_mesh):
     newcolors = viridis(np.linspace(0, 1, 30))  # Generate the colors
     custom_cmap = ListedColormap(newcolors)  # Create a new ListedColormap
 
-    p_scalar = pvqt.BackgroundPlotter()
+    #p_scalar = pvqt.BackgroundPlotter()
+    p_scalar = pv.Plotter(notebook=notebook)
     # change the color bar 
     scalar_bar_args = {
     'title_font_size': 30,   
@@ -404,13 +414,14 @@ def scalar_field(scalar_field, fault_mesh):
     return p_scalar.show()
 
 
-def stratigraphic(scalar_field):
+def stratigraphic(scalar_field, notebook=False):
     """
     visualize the stratigraphic units, the scalar field is thresholded to get the stratigraphic model
     scalar_field: the 3D scalar field
     *** only for case 1 ***
     """
-    p_stratigraphic = pvqt.BackgroundPlotter()
+    #p_stratigraphic = pvqt.BackgroundPlotter()
+    p_stratigraphic = pv.Plotter(notebook=notebook)
 
     scalar = scalar_field.point_data['scalar'] 
     scalar = np.where(scalar >= 1, 4, scalar)

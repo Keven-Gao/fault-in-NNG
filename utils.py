@@ -60,6 +60,20 @@ def query_points(bounds, resolution):
 
     return test_x
 
+def domain_meshgrid(extents, resolution):
+        """
+        a defined grid mesh for the model domain
+        extents: the extent of the model domain
+        resolution: the resolution of the model
+        """
+        grid_mesh_final = pv.ImageData()
+        grid_mesh_final.dimensions = resolution
+        grid_mesh_final.origin = [extents[0], extents[2], extents[4]]
+        grid_mesh_final.spacing = [(extents[1]-extents[0])/(resolution[0]-1), (extents[3]-extents[2])/(resolution[1]-1), 
+                                (extents[5]-extents[4])/(resolution[2]-1)]
+
+        return grid_mesh_final
+
 
 def query_points_exect_bounds(bounds, resolution):
     """
@@ -83,7 +97,7 @@ def domain_meshgrid(extents, resolution):
     extents: the extent of the model domain
     resolution: the resolution of the model
     """
-    grid_mesh_final = pv.UniformGrid()
+    grid_mesh_final = pv.ImageData()
     grid_mesh_final.dimensions = resolution
     grid_mesh_final.origin = [extents[0], extents[2], extents[4]]
     grid_mesh_final.spacing = [(extents[1]-extents[0])/(resolution[0]-1), (extents[3]-extents[2])/(resolution[1]-1), 
@@ -108,7 +122,7 @@ def predict_to_mesh_fault(extents, resolution, predictions):
     extents[3] = extents[3] + cell_size
     extents[4] = extents[4] - cell_size
     extents[5] = extents[5] + cell_size
-    grid_mesh_final = pv.UniformGrid()
+    grid_mesh_final = pv.ImageData()
     grid_mesh_final.dimensions = resolution
     grid_mesh_final.origin = [extents[0], extents[2], extents[4]]
     grid_mesh_final.spacing = [(extents[1]-extents[0])/(resolution[0]-1), (extents[3]-extents[2])/(resolution[1]-1), (extents[5]-extents[4])/(resolution[2]-1)]
@@ -126,7 +140,7 @@ def predict_to_mesh_single_surface(extents, resolution, predictions):
     resolution: the resolution of the model
     predictions: the prediction results of the gridmesh points
     """
-    grid_mesh_final = pv.UniformGrid()
+    grid_mesh_final = pv.ImageData()
     grid_mesh_final.dimensions = resolution
     grid_mesh_final.origin = [extents[0], extents[2], extents[4]]
     grid_mesh_final.spacing = [(extents[1]-extents[0])/(resolution[0]-1), (extents[3]-extents[2])/(resolution[1]-1), (extents[5]-extents[4])/(resolution[2]-1)]
@@ -145,7 +159,7 @@ def predict_to_mesh_stratigraphic(extents, resolution, predictions, iso_values):
     resolution: the resolution of the model
     predictions: the prediction results of the gridmesh points
     """
-    grid_mesh_final = pv.UniformGrid()
+    grid_mesh_final = pv.ImageData()
     grid_mesh_final.dimensions = resolution
     grid_mesh_final.origin = [extents[0], extents[2], extents[4]]
     grid_mesh_final.spacing = [(extents[1]-extents[0])/(resolution[0]-1), (extents[3]-extents[2])/(resolution[1]-1), (extents[5]-extents[4])/(resolution[2]-1)]
