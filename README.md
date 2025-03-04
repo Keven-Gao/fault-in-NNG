@@ -13,3 +13,6 @@ matplotlib
 pyvistaqt (optional)  
 pyvista  
 pyqt
+
+## Workflow diagram: 
+![image]([picture or gif url](https://github.com/Keven-Gao/fault-in-NNG/blob/main/workflow.pdf))
