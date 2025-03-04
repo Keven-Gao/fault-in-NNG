@@ -12,7 +12,7 @@ def observation(interface_points, orientation_points, extent, notebook=False):
     extent: the extent of the model
     """
     #p_input = pvqt.BackgroundPlotter()
-    p_input = pv.Plotter(notebook=notebook)
+    p_input = pv.Plotter(notebook=notebook, window_size=(800, 600))
     # color map for different rock types
     # if the number of rock types is more than 9, the color map should be extended
     cmap = ['purple', 'green', 'yellow', 'goldenrod', 'purple', 'green', 'yellow', 'goldenrod', 'orangered']
@@ -63,7 +63,7 @@ def observation_fault_mesh(interface_points, orientation_points, extent, fault_m
     extent: the extent of the model
     """
     #p_input = pvqt.BackgroundPlotter()
-    p_input = pv.Plotter(notebook=notebook)
+    p_input = pv.Plotter(notebook=notebook, window_size=(800, 600))
     # color map for different rock types
     # if the number of rock types is more than 9, the color map should be extended
     cmap = ['purple', 'green', 'yellow', 'goldenrod', 'purple', 'green', 'yellow', 'goldenrod', 'orangered']
@@ -118,7 +118,7 @@ def fault_mesh(mesh_list, surface_points, orientation_points, extent, notebook=F
     extent: the extent of the model
     """
     #p_fault = pvqt.BackgroundPlotter()
-    p_fault = pv.Plotter(notebook=notebook)
+    p_fault = pv.Plotter(notebook=notebook, window_size=(800, 600))
     # color map for different rock types
     # if the number of rock types is more than 9, the color map should be extended
     cmap = ['purple', 'green', 'yellow', 'goldenrod', 'purple', 'green', 'yellow', 'goldenrod', 'orangered']
@@ -177,7 +177,7 @@ def feature_encoding(mesh_list, number, extent, type='mesh_point', side=None, do
     # which mesh to visualize
     mesh = mesh_list[number]  # number = 0 is the first mesh
     #p_encoding = pvqt.BackgroundPlotter()
-    p_encoding = pv.Plotter(notebook=notebook)
+    p_encoding = pv.Plotter(notebook=notebook, window_size=(800, 600))
     p_encoding.add_mesh(mesh, color='grey', line_width=5)
     if type == 'mesh_point':
         if side == 'up':  # relative move up side
@@ -215,7 +215,7 @@ def final_structure(fautl_mesh_list, stratigraphic_mesh, unconformity_mesh_list=
     unconformity: state whether the model has unconformity
     """
     #p_structure = pvqt.BackgroundPlotter()
-    p_structure = pv.Plotter(notebook=notebook)
+    p_structure = pv.Plotter(notebook=notebook, window_size=(800, 600))
     # change the color bar 
     scalar_bar_args = {
     'title_font_size': 30,   
@@ -337,7 +337,7 @@ def layer(scalar_field, fault_mesh_list, extent, notebook=False):
     custom_cmap = ListedColormap(middle_colors)
 
     #p_layer = pvqt.BackgroundPlotter()
-    p_layer = pv.Plotter(notebook=notebook)
+    p_layer = pv.Plotter(notebook=notebook, window_size=(800, 600))
     subset_mesh = scalar_field.threshold([-1,0], scalars='scalar')
 
     # change the color bar 
@@ -388,7 +388,7 @@ def scalar_field(scalar_field, fault_mesh, notebook=False):
     custom_cmap = ListedColormap(newcolors)  # Create a new ListedColormap
 
     #p_scalar = pvqt.BackgroundPlotter()
-    p_scalar = pv.Plotter(notebook=notebook)
+    p_scalar = pv.Plotter(notebook=notebook, window_size=(800, 600))
     # change the color bar 
     scalar_bar_args = {
     'title_font_size': 30,   
@@ -421,7 +421,7 @@ def stratigraphic(scalar_field, notebook=False):
     *** only for case 1 ***
     """
     #p_stratigraphic = pvqt.BackgroundPlotter()
-    p_stratigraphic = pv.Plotter(notebook=notebook)
+    p_stratigraphic = pv.Plotter(notebook=notebook, window_size=(800, 600))
 
     scalar = scalar_field.point_data['scalar'] 
     scalar = np.where(scalar >= 1, 4, scalar)
