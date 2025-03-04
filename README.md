@@ -15,4 +15,4 @@ pyvista
 pyqt
 
 ## Workflow diagram: 
-![image]([picture or gif url](https://github.com/Keven-Gao/fault-in-NNG/blob/main/workflow.pdf))
+![image]([picture or gif url](https://github.com/Keven-Gao/fault-in-NNG/blob/main/workflow.svg))
