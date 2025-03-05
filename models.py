@@ -7,7 +7,7 @@ import time
 import torch.nn as nn
 
 def single_surface_ConcatMLP(interface_points, orientation_points, extent, resolution, in_dim, hidden_dim, out_dim,
-                    n_hidden_layers, activation='Softplus', beta=1, concat=False, epochs=2000, lr=0.001):
+                    n_hidden_layers, activation='Softplus', beta=1, concat=False, epochs=2000, lr=0.001, device=torch.device("cpu")):
     """
     Notes: 1.this function is used to model the single surface, such as fault, unconformity, etc.
            2. use autograd to calculate the orientation gradient
@@ -39,7 +39,7 @@ def single_surface_ConcatMLP(interface_points, orientation_points, extent, resol
     points, labels = utils.extend_surface(normalized_inter_points)  # labels are the assigned scalar values of the three surface points
     points = np.vstack([points, normalized_orien_points])  # orientation points do not need to be extended to three surfaces
     # convert to torch tensor and send to GPU
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    #device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     mlp_x_tensor = torch.tensor(points, dtype=torch.float32).to(device).requires_grad_(True)
     mlp_y_tensor = torch.tensor(labels, dtype=torch.float32).to(device)
     mlp_dy_tensor = torch.tensor(select_arrow_vectors, dtype=torch.float32).to(device)
@@ -101,7 +101,8 @@ def single_surface_ConcatMLP(interface_points, orientation_points, extent, resol
 
 
 def unconformity_ConcatMLP_neighbor(interface_points, orientation_points, extent, resolution, in_dim, hidden_dim, out_dim,
-                    n_hidden_layers, activation='Softplus', beta_list=[], concat=False, epochs=2000, lr=0.001, delta_orie=1):
+                    n_hidden_layers, activation='Softplus', beta_list=[], concat=False, epochs=2000, lr=0.001, delta_orie=1, 
+                    device=torch.device("cpu")):
     """
     Notes: 1. use the neighbor points to calculate the orientation gradient, do not use autograd
            2. this function is used to model the unconformity surface, which is an extension of 'single_surface_ConcatMLP', 
@@ -144,7 +145,7 @@ def unconformity_ConcatMLP_neighbor(interface_points, orientation_points, extent
         # the additional orientation points for calculating the orientation gradient
         normalized_additional_orie_x6 = utils.delta_cal_orie(normalized_train_orie_x, resolution=resolution, delta=delta_orie)
          
-        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        #device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         # concatenate the interface points and orientation points
         train_x_dx = np.vstack((train_data_x, normalized_additional_orie_x6))
         # convert to torch tensor and send to GPU
@@ -215,7 +216,7 @@ def unconformity_ConcatMLP_neighbor(interface_points, orientation_points, extent
 
 
 def unconformity_ConcatMLP(interface_points, orientation_points, extent, resolution, in_dim, hidden_dim, out_dim,
-                    n_hidden_layers, activation='Softplus', beta_list=[], concat=False, epochs=2000, lr=0.001):
+                    n_hidden_layers, activation='Softplus', beta_list=[], concat=False, epochs=2000, lr=0.001, device=torch.device("cpu")):
     """
     Notes: 1. use the autograd to calculate the orientation gradient
            2. this function is used to model the unconformity surface, which is an extension of 'single_surface_ConcatMLP', 
@@ -256,7 +257,7 @@ def unconformity_ConcatMLP(interface_points, orientation_points, extent, resolut
         points, labels = utils.extend_surface(normalized_inter_points)
         points = np.vstack([points, normalized_orien_points]) 
         # convert to torch tensor and send to GPU
-        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        #device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         mlp_x_tensor = torch.tensor(points, dtype=torch.float32).to(device).requires_grad_(True)
         mlp_y_tensor = torch.tensor(labels, dtype=torch.float32).to(device)
         mlp_dy_tensor = torch.tensor(select_arrow_vectors, dtype=torch.float32).to(device)
@@ -320,7 +321,8 @@ def unconformity_ConcatMLP(interface_points, orientation_points, extent, resolut
 
 
 def fault_ConcatMLP(interface_points, orientation_points, extent, resolution, in_dim, hidden_dim, out_dim,
-                    n_hidden_layers, activation='Softplus', beta_list=[], concat=False, epochs=2000, lr=0.001, above_below=False):
+                    n_hidden_layers, activation='Softplus', beta_list=[], concat=False, epochs=2000, lr=0.001, above_below=False, 
+                    device=torch.device("cpu")):
     """
     Notes: 1. this function is used to model the fault surface, it is divided into two modes by whether using the above and below constraints, 
            2. the above and below constraints are used when thestratigraphic units (points) are vary close to the fault surface
@@ -375,7 +377,7 @@ def fault_ConcatMLP(interface_points, orientation_points, extent, resolution, in
             points, labels = utils.extend_surface(normalized_inter_points)
             points = np.vstack([points, normalized_above_points, normalized_below_points, normalized_orien_points])
             # convert to torch tensor and send to GPU
-            device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+            #device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
             mlp_x_tensor = torch.tensor(points, dtype=torch.float32).to(device).requires_grad_(True)
             mlp_y_tensor = torch.tensor(labels, dtype=torch.float32).to(device)
             mlp_dy_tensor = torch.tensor(select_arrow_vectors, dtype=torch.float32).to(device)
@@ -457,7 +459,7 @@ def fault_ConcatMLP(interface_points, orientation_points, extent, resolution, in
             points, labels = utils.extend_surface(normalized_inter_points)
             points = np.vstack([points, normalized_orien_points])
             # convert to torch tensor and send to GPU
-            device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+            #device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
             mlp_x_tensor = torch.tensor(points, dtype=torch.float32).to(device).requires_grad_(True)
             mlp_y_tensor = torch.tensor(labels, dtype=torch.float32).to(device)
             mlp_dy_tensor = torch.tensor(select_arrow_vectors, dtype=torch.float32).to(device)
@@ -521,7 +523,7 @@ def fault_ConcatMLP(interface_points, orientation_points, extent, resolution, in
 
 def fault_ConcatMLP_with_encoding(interface_points, orientation_points, extent, resolution, in_dim, hidden_dim, out_dim,
                     n_hidden_layers, activation='Softplus', beta_list=[], concat=False, epochs=2000, lr=0.001, above_below=False, 
-                    fault_direct='right', movement='down'):
+                    fault_direct='right', movement='down', device=torch.device("cpu")):
     """
     Notes: 1. this function is used to model the fault surface, it is divided into two modes by whether using the above and below constraints, 
            2. the above and below constraints are used when thestratigraphic units (points) are vary close to the fault surface
@@ -545,7 +547,7 @@ def fault_ConcatMLP_with_encoding(interface_points, orientation_points, extent, 
     # read the data
     fault_surf_point = interface_points[interface_points['type'] == 'fault']
     fault_orie_point = orientation_points[orientation_points['type'] == 'fault']
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    #device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     # query points
     test_x = utils.query_points(extent, resolution)
     norm_text_x = utils.normalize(test_x, extent)
@@ -741,7 +743,8 @@ def fault_ConcatMLP_with_encoding(interface_points, orientation_points, extent, 
 
 
 def stratigraphic_ConcatMLP_neighbor(interface_data, orientation_data, meshgrid_data, extent, resolution, in_dim, hidden_dim, out_dim,
-                    n_hidden_layers, activation='Softplus', beta=1, concat=False, epochs=2000, lr=0.001, delta_orie=1, alpha=0.1):
+                    n_hidden_layers, activation='Softplus', beta=1, concat=False, epochs=2000, lr=0.001, delta_orie=1, alpha=0.1, 
+                    device=torch.device("cpu")):
     """
     Notes: 1. this function is used to model the stratigraphic surfaces, fault feature encoding for this purpose
            2. use neighbor points of orientation to calculate the orientation gradient
@@ -775,7 +778,7 @@ def stratigraphic_ConcatMLP_neighbor(interface_data, orientation_data, meshgrid_
     # key step: the additional orientation points for calculating the orientation gradient should with the same fault feature as orientation points
     normalized_additional_orie_x6 = utils.delta_cal_orie(normalized_train_orie_x, resolution=resolution, delta=delta_orie)
 
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    #device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     # concatenate the interface points and orientation points for training
     train_x_dx = np.vstack((normalized_train_data_x, normalized_additional_orie_x6))
     # convert to torch tensor and send to GPU
@@ -849,7 +852,8 @@ def stratigraphic_ConcatMLP_neighbor(interface_data, orientation_data, meshgrid_
 
 
 def stratigraphic_ConcatMLP(interface_data, orientation_data, meshgrid_data, extent, resolution, in_dim, hidden_dim, out_dim,
-                    n_hidden_layers, activation='Softplus', beta=1, concat=False, epochs=2000, lr=0.001, alpha=0.1):
+                    n_hidden_layers, activation='Softplus', beta=1, concat=False, epochs=2000, lr=0.001, alpha=0.1,
+                    device=torch.device("cpu")):
     """
     Notes: 1. this function is used to model the stratigraphic surfaces, fault feature encoding for this purpose
            2. use 'autograd' to calculate the orientation gradient
@@ -883,7 +887,7 @@ def stratigraphic_ConcatMLP(interface_data, orientation_data, meshgrid_data, ext
     # key step: the additional orientation points for calculating the orientation gradient should with the same fault feature as orientation points
     #normalized_additional_orie_x6 = utils.delta_cal_orie(normalized_train_orie_x, resolution=resolution, delta=delta_orie)
 
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    #device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     # concatenate the interface points and orientation points for training
     train_x_dx = np.vstack((normalized_train_data_x, normalized_train_orie_x))
     # convert to torch tensor and send to GPU
